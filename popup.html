@@ -3,9 +3,20 @@
 <head><meta charset="UTF-8"><title>Waypoint</title></head>
 <body>
   <h2>Waypoint</h2>
-  <input type="text" id="projectName" placeholder="Project name" />
-  <textarea id="notes" placeholder="Notes..."></textarea>
+  <label>Project Name</label>
+  <input type="text" id="projectName" placeholder="e.g. Vault" />
+  <label>Completed</label>
+  <textarea id="completed" rows="3" placeholder="What's done?"></textarea>
+  <label>In Progress</label>
+  <textarea id="inProgress" rows="3" placeholder="Working on..."></textarea>
+  <label>Blocked</label>
+  <textarea id="blocked" rows="2" placeholder="Blockers..."></textarea>
+  <label>Next Steps</label>
+  <textarea id="nextSteps" rows="3" placeholder="Next..."></textarea>
+  <label>Notes</label>
+  <textarea id="notes" rows="2" placeholder="Notes..."></textarea>
   <button id="saveBtn">Save</button>
+  <p id="status"></p>
   <script src="popup.js"></script>
 </body>
 </html>
