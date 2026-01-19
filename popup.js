@@ -1,18 +1,15 @@
 // popup.js — save and load state
+// fix: added null check so fields don't show 'undefined' on first open
 
-// Load saved data when popup opens
 document.addEventListener('DOMContentLoaded', () => {
-  chrome.storage.local.get(
-    ['projectName','completed','inProgress','blocked','nextSteps','notes'],
-    (data) => {
-      document.getElementById('projectName').value = data.projectName || '';
-      document.getElementById('completed').value   = data.completed   || '';
-      document.getElementById('inProgress').value  = data.inProgress  || '';
-      document.getElementById('blocked').value     = data.blocked     || '';
-      document.getElementById('nextSteps').value   = data.nextSteps   || '';
-      document.getElementById('notes').value       = data.notes       || '';
-    }
-  );
+  chrome.storage.local.get(null, (data) => {
+    document.getElementById('projectName').value = data.projectName || '';
+    document.getElementById('completed').value   = data.completed   || '';
+    document.getElementById('inProgress').value  = data.inProgress  || '';
+    document.getElementById('blocked').value     = data.blocked     || '';
+    document.getElementById('nextSteps').value   = data.nextSteps   || '';
+    document.getElementById('notes').value       = data.notes       || '';
+  });
 });
 
 document.getElementById('saveBtn').addEventListener('click', () => {
@@ -25,7 +22,8 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     notes:       document.getElementById('notes').value.trim(),
   };
   chrome.storage.local.set(data, () => {
-    document.getElementById('status').textContent = 'Saved!';
-    setTimeout(() => { document.getElementById('status').textContent = ''; }, 2000);
+    const status = document.getElementById('status');
+    status.textContent = '✓ Saved';
+    setTimeout(() => { status.textContent = ''; }, 2000);
   });
 });
