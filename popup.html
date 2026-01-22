@@ -22,7 +22,10 @@
   <button id="saveBtn">Save</button>
   <p id="status"></p>
   <hr/>
-  <button id="generateBtn">Generate Context</button>
+  <div style="display:flex; gap:6px; margin-top:4px;">
+    <button id="generateBtn" style="flex:1">Generate Context</button>
+    <button id="copyBtn" style="flex:0 0 auto" disabled>Copy</button>
+  </div>
   <div id="contextBox" style="display:none; margin-top:8px;">
     <pre id="contextOutput" style="font-size:11px; white-space:pre-wrap; background:#f5f5f5; padding:8px; border-radius:3px;"></pre>
   </div>

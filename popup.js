@@ -1,4 +1,4 @@
-// popup.js — save, load, generate context
+// popup.js — save, load, generate, copy
 
 document.addEventListener('DOMContentLoaded', () => {
   chrome.storage.local.get(null, (data) => {
@@ -34,10 +34,20 @@ document.getElementById('generateBtn').addEventListener('click', () => {
   const blocked    = document.getElementById('blocked').value.trim();
   const nextSteps  = document.getElementById('nextSteps').value.trim();
   const notes      = document.getElementById('notes').value.trim();
-
   const context = buildContext({ name, completed, inProgress, blocked, nextSteps, notes });
   document.getElementById('contextOutput').textContent = context;
   document.getElementById('contextBox').style.display = 'block';
+  document.getElementById('copyBtn').disabled = false;
+});
+
+document.getElementById('copyBtn').addEventListener('click', () => {
+  const text = document.getElementById('contextOutput').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+  });
 });
 
 function buildContext({ name, completed, inProgress, blocked, nextSteps, notes }) {
