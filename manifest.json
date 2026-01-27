@@ -3,8 +3,13 @@
   "name": "Waypoint",
   "version": "0.1",
   "description": "Save your AI project state.",
-  "action": {
-    "default_popup": "popup.html"
-  },
-  "permissions": ["storage", "clipboardWrite"]
+  "action": { "default_popup": "popup.html" },
+  "permissions": ["storage", "clipboardWrite"],
+  "content_scripts": [
+    {
+      "matches": ["https://claude.ai/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
 }
