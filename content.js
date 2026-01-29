@@ -1,5 +1,5 @@
-// content.js — inject a floating button on Claude
-// clicking it reads saved project state and inserts into chat
+// content.js — inject floating button on Claude
+// fix: moved button position up to avoid overlapping send button
 
 (function() {
   setTimeout(injectButton, 1500);
@@ -10,19 +10,21 @@ function injectButton() {
 
   const btn = document.createElement('button');
   btn.id = 'waypoint-btn';
-  btn.textContent = 'Waypoint';
+  btn.textContent = '⊕ Waypoint';
   Object.assign(btn.style, {
     position: 'fixed',
-    bottom: '80px',
-    right: '16px',
+    bottom: '100px',
+    right: '20px',
     zIndex: '99999',
     background: '#5b5ef4',
     color: 'white',
     border: 'none',
-    borderRadius: '20px',
-    padding: '8px 14px',
+    borderRadius: '99px',
+    padding: '9px 16px',
     fontSize: '13px',
+    fontWeight: '600',
     cursor: 'pointer',
+    boxShadow: '0 2px 12px rgba(91,94,244,0.4)',
   });
 
   btn.addEventListener('click', () => {
@@ -32,9 +34,11 @@ function injectButton() {
         return;
       }
       const text = buildContext(data);
-      const input = document.querySelector('div[contenteditable="true"]');
+      const input = document.querySelector('div[contenteditable="true"]') ||
+                    document.querySelector('textarea');
       if (input) {
         input.focus();
+        document.execCommand('selectAll', false, null);
         document.execCommand('insertText', false, text);
       }
     });
@@ -54,6 +58,6 @@ function buildContext(data) {
   if (data.blocked)    { lines.push('', 'Blocked:',     bullets(data.blocked)); }
   if (data.nextSteps)  { lines.push('', 'Next Steps:',  bullets(data.nextSteps)); }
   if (data.notes)      { lines.push('', 'Notes:',       bullets(data.notes)); }
-  lines.push('', '---', 'Resume Instruction: Use this context to continue the project without asking me to re-explain completed work.');
+  lines.push('', '---', 'Resume Instruction: Use this context to continue without re-explaining.');
   return lines.join('\n');
 }
