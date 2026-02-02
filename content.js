@@ -1,5 +1,5 @@
-// content.js — inject floating button on Claude
-// fix: moved button position up to avoid overlapping send button
+// content.js — inject button on Claude and ChatGPT
+// ChatGPT uses a different input selector than Claude
 
 (function() {
   setTimeout(injectButton, 1500);
@@ -12,39 +12,56 @@ function injectButton() {
   btn.id = 'waypoint-btn';
   btn.textContent = '⊕ Waypoint';
   Object.assign(btn.style, {
-    position: 'fixed',
-    bottom: '100px',
-    right: '20px',
-    zIndex: '99999',
-    background: '#5b5ef4',
-    color: 'white',
-    border: 'none',
-    borderRadius: '99px',
-    padding: '9px 16px',
-    fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer',
+    position: 'fixed', bottom: '100px', right: '20px', zIndex: '99999',
+    background: '#5b5ef4', color: 'white', border: 'none', borderRadius: '99px',
+    padding: '9px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
     boxShadow: '0 2px 12px rgba(91,94,244,0.4)',
   });
 
-  btn.addEventListener('click', () => {
-    chrome.storage.local.get(null, (data) => {
-      if (!data.projectName) {
-        alert('No project saved. Open Waypoint first.');
-        return;
-      }
-      const text = buildContext(data);
-      const input = document.querySelector('div[contenteditable="true"]') ||
-                    document.querySelector('textarea');
-      if (input) {
-        input.focus();
+  btn.addEventListener('click', handleClick);
+  document.body.appendChild(btn);
+}
+
+function handleClick() {
+  chrome.storage.local.get(null, (data) => {
+    if (!data.projectName) {
+      alert('No project saved. Open Waypoint first.');
+      return;
+    }
+    const text = buildContext(data);
+    insertText(text);
+  });
+}
+
+function insertText(text) {
+  const hostname = window.location.hostname;
+
+  // ChatGPT uses a specific textarea
+  if (hostname.includes('chatgpt.com') || hostname.includes('openai.com')) {
+    const el = document.querySelector('textarea') ||
+               document.querySelector('div[contenteditable="true"]');
+    if (el) {
+      el.focus();
+      // React controlled input needs native setter trick
+      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value');
+      if (nativeSetter && el.tagName === 'TEXTAREA') {
+        nativeSetter.set.call(el, text);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      } else {
         document.execCommand('selectAll', false, null);
         document.execCommand('insertText', false, text);
       }
-    });
-  });
+    }
+    return;
+  }
 
-  document.body.appendChild(btn);
+  // Claude uses contenteditable div
+  const el = document.querySelector('div[contenteditable="true"]');
+  if (el) {
+    el.focus();
+    document.execCommand('selectAll', false, null);
+    document.execCommand('insertText', false, text);
+  }
 }
 
 function buildContext(data) {
