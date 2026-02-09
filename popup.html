@@ -7,27 +7,41 @@
 </head>
 <body>
   <h2>Waypoint</h2>
-  <label>Project Name</label>
-  <input type="text" id="projectName" placeholder="e.g. Vault" />
-  <label>Completed</label>
-  <textarea id="completed" rows="3" placeholder="What's done?"></textarea>
-  <label>In Progress</label>
-  <textarea id="inProgress" rows="3" placeholder="Working on..."></textarea>
-  <label>Blocked</label>
-  <textarea id="blocked" rows="2" placeholder="Blockers..."></textarea>
-  <label>Next Steps</label>
-  <textarea id="nextSteps" rows="3" placeholder="Next..."></textarea>
-  <label>Notes</label>
-  <textarea id="notes" rows="2" placeholder="Notes..."></textarea>
-  <button id="saveBtn">Save</button>
-  <p id="status"></p>
-  <hr/>
-  <div style="display:flex; gap:6px; margin-top:4px;">
-    <button id="generateBtn" style="flex:1">Generate Context</button>
-    <button id="copyBtn" style="flex:0 0 auto" disabled>Copy</button>
-  </div>
-  <div id="contextBox" style="display:none; margin-top:8px;">
-    <pre id="contextOutput" style="font-size:11px; white-space:pre-wrap; background:#f5f5f5; padding:8px; border-radius:3px;"></pre>
+  <div class="main">
+    <div>
+      <label>Project Name</label>
+      <input type="text" id="projectName" placeholder="e.g. Vault, Habi..." />
+    </div>
+    <div>
+      <label>Completed</label>
+      <textarea id="completed" rows="3" placeholder="What's done? One item per line."></textarea>
+    </div>
+    <div>
+      <label>In Progress</label>
+      <textarea id="inProgress" rows="3" placeholder="What are you working on?"></textarea>
+    </div>
+    <div>
+      <label>Blocked</label>
+      <textarea id="blocked" rows="2" placeholder="Any blockers?"></textarea>
+    </div>
+    <div>
+      <label>Next Steps</label>
+      <textarea id="nextSteps" rows="3" placeholder="What needs to happen next?"></textarea>
+    </div>
+    <div>
+      <label>Notes</label>
+      <textarea id="notes" rows="2" placeholder="Anything else the AI should know?"></textarea>
+    </div>
+    <button id="saveBtn">Save</button>
+    <p id="status"></p>
+    <hr/>
+    <div class="btn-row">
+      <button id="generateBtn">Generate Context</button>
+      <button id="copyBtn" disabled>Copy</button>
+    </div>
+    <div id="contextBox" class="hidden">
+      <pre id="contextOutput"></pre>
+    </div>
   </div>
   <script src="popup.js"></script>
 </body>
