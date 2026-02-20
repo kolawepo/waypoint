@@ -1,48 +1,63 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Waypoint</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <h2>Waypoint</h2>
-  <div class="main">
-    <div>
-      <label>Project Name</label>
-      <input type="text" id="projectName" placeholder="e.g. Vault, Habi..." />
+  <header class="header">
+    <div class="header-top">
+      <span class="logo-text">Waypoint</span>
+      <span class="version-tag">v1</span>
     </div>
-    <div>
-      <label>Completed</label>
-      <textarea id="completed" rows="3" placeholder="What's done? One item per line."></textarea>
+    <div class="project-bar">
+      <select id="projectSelect" class="project-select">
+        <option value="">— select a project —</option>
+      </select>
+      <button id="newProjectBtn" class="icon-btn" title="New project">+</button>
+      <button id="deleteProjectBtn" class="icon-btn icon-btn--danger" title="Delete" disabled>✕</button>
     </div>
-    <div>
-      <label>In Progress</label>
-      <textarea id="inProgress" rows="3" placeholder="What are you working on?"></textarea>
+  </header>
+  <div id="emptyState" class="empty-state">
+    <p class="empty-title">No projects yet</p>
+    <p class="empty-sub">Click <strong>+</strong> to create one.</p>
+  </div>
+  <main id="projectForm" class="main hidden">
+    <div class="field-group">
+      <label class="field-label">Completed</label>
+      <textarea id="completed" class="textarea" rows="3" placeholder="What's done? One item per line."></textarea>
     </div>
-    <div>
-      <label>Blocked</label>
-      <textarea id="blocked" rows="2" placeholder="Any blockers?"></textarea>
+    <div class="field-group">
+      <label class="field-label">In Progress</label>
+      <textarea id="inProgress" class="textarea" rows="3" placeholder="What are you working on?"></textarea>
     </div>
-    <div>
-      <label>Next Steps</label>
-      <textarea id="nextSteps" rows="3" placeholder="What needs to happen next?"></textarea>
+    <div class="field-group">
+      <label class="field-label">Blocked</label>
+      <textarea id="blocked" class="textarea" rows="2" placeholder="Any blockers?"></textarea>
     </div>
-    <div>
-      <label>Notes</label>
-      <textarea id="notes" rows="2" placeholder="Anything else the AI should know?"></textarea>
+    <div class="field-group">
+      <label class="field-label">Next Steps</label>
+      <textarea id="nextSteps" class="textarea" rows="3" placeholder="What needs to happen next?"></textarea>
     </div>
-    <button id="saveBtn">Save</button>
-    <p id="status"></p>
-    <hr/>
+    <div class="field-group">
+      <label class="field-label">Notes</label>
+      <textarea id="notes" class="textarea" rows="2" placeholder="Anything else the AI should know?"></textarea>
+    </div>
+    <button id="saveBtn" class="btn btn--primary">Save</button>
+    <p id="saveStatus" class="save-status"></p>
     <div class="btn-row">
-      <button id="generateBtn">Generate Context</button>
-      <button id="copyBtn" disabled>Copy</button>
+      <button id="generateBtn" class="btn btn--secondary">Generate Context</button>
+      <button id="copyBtn" class="btn btn--ghost" disabled>Copy</button>
     </div>
-    <div id="contextBox" class="hidden">
+    <div id="contextBox" class="context-box hidden">
       <pre id="contextOutput"></pre>
     </div>
-  </div>
+  </main>
+  <footer id="proFooter" class="pro-footer hidden">
+    <span>🔒 5-project limit reached.</span>
+    <button id="unlockBtn" class="btn-pro">Unlock Pro</button>
+  </footer>
   <script src="popup.js"></script>
 </body>
 </html>
