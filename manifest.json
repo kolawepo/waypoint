@@ -1,17 +1,21 @@
 {
   "manifest_version": 3,
   "name": "Waypoint",
-  "version": "0.1",
-  "description": "Save your AI project state.",
-  "action": { "default_popup": "popup.html" },
+  "version": "2.0",
+  "description": "Project memory layer for AI-assisted work. Save your project state and inject it into ChatGPT or Claude instantly.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Waypoint"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "permissions": ["storage", "clipboardWrite"],
   "content_scripts": [
     {
-      "matches": [
-        "https://claude.ai/*",
-        "https://chatgpt.com/*",
-        "https://chat.openai.com/*"
-      ],
+      "matches": ["https://claude.ai/*","https://chatgpt.com/*","https://chat.openai.com/*"],
       "js": ["content.js"],
       "run_at": "document_idle"
     }
