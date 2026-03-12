@@ -12,7 +12,12 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": ["storage", "clipboardWrite"],
+  "permissions": ["storage", "clipboardWrite", "tabs"],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://claude.ai/*"
+  ],
   "content_scripts": [
     {
       "matches": ["https://claude.ai/*","https://chatgpt.com/*","https://chat.openai.com/*"],
