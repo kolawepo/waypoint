@@ -260,3 +260,4 @@ function buildContextBlock(p) {
   lines.push('','---','Resume Instruction: Use this context to continue the project without asking me to re-explain completed work. First verify current state, then continue from the next step.');
   return lines.join('\n');
 }
+// fix: broadened selectors after Claude DOM update mar 2026
