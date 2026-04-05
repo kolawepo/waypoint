@@ -261,3 +261,4 @@ function buildContextBlock(p) {
   return lines.join('\n');
 }
 // fix: broadened selectors after Claude DOM update mar 2026
+// fix: was dismissing after 15s, bumped timeout
