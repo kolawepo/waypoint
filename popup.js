@@ -141,3 +141,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // fix: save active project before switching to prevent data loss
+// finalized multi-project logic apr 2026
