@@ -263,3 +263,4 @@ function buildContextBlock(p) {
 // fix: broadened selectors after Claude DOM update mar 2026
 // fix: was dismissing after 15s, bumped timeout
 // ux: banner now watches for first message send
+// fix: increased init delay for hard refresh
