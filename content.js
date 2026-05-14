@@ -264,3 +264,4 @@ function buildContextBlock(p) {
 // fix: was dismissing after 15s, bumped timeout
 // ux: banner now watches for first message send
 // fix: increased init delay for hard refresh
+// added Prisma, Vite, Supabase, Redis to keyword list
