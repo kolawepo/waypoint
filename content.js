@@ -265,3 +265,4 @@ function buildContextBlock(p) {
 // ux: banner now watches for first message send
 // fix: increased init delay for hard refresh
 // added Prisma, Vite, Supabase, Redis to keyword list
+// fix: added data-id fallback for ChatGPT input
