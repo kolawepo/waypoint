@@ -266,3 +266,4 @@ function buildContextBlock(p) {
 // fix: increased init delay for hard refresh
 // added Prisma, Vite, Supabase, Redis to keyword list
 // fix: added data-id fallback for ChatGPT input
+// refactor: cleaned up debug logs and comments
