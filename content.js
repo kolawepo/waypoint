@@ -4,9 +4,15 @@
 
 (function init() {
   setTimeout(() => {
-    injectFloatingButton();
+  injectFloatingButton();
+  checkForNewChat();
+}, 1000);
+
+setInterval(() => {
+  if (isNewChat()) {
     checkForNewChat();
-  }, 2500);
+  }
+}, 3000);
 
   let lastUrl = window.location.href;
 
@@ -118,6 +124,12 @@ function cleanSessionText(text) {
     "Understand this error",
     "Grammarly.js",
     "DatadogRUM",
+    "Usage limit reached",
+"Resets",
+"limits shared",
+"Claude Code",
+"message limit reached",
+"usage limit",
   ];
 
   return text

@@ -14,7 +14,7 @@ const AI_URLS = ['claude.ai', 'chatgpt.com', 'chat.openai.com'];
 const SUMMARY_API_URL = 'http://localhost:3001/summarize';
 
 // Scan tabs every 30 seconds
-setInterval(scanAllAITabs, 30000);
+setInterval(scanAllAITabs, 10000);
 
 // Scan when user switches tabs
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
