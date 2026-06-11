@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Waypoint — AI Project Memory</title>
+  <meta name="description" content="A Chrome extension that remembers your AI project sessions so you never have to re-explain your work again." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #111a0f;
+      --surface:     #182216;
+      --surface-hi:  #1e2c1b;
+      --border:      #253521;
+      --orange:      #E8753A;
+      --orange-soft: rgba(232,117,58,0.10);
+      --text:        #e8dfc8;
+      --muted:       #8a9e7e;
+      --dim:         #3d5236;
+      --green:       #6dbf8a;
+      --font:        'DM Sans', system-ui, sans-serif;
+      --mono:        'DM Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(17,26,15,0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text);
+    }
+
+    .btn-github {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--font);
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .btn-github:hover {
+      border-color: var(--orange);
+      background: var(--orange-soft);
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 96px 24px 80px;
+      text-align: center;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--orange);
+      background: var(--orange-soft);
+      border: 1px solid rgba(232,117,58,0.25);
+      padding: 4px 12px;
+      border-radius: 99px;
+      margin-bottom: 28px;
+    }
+
+    .hero h1 {
+      font-size: clamp(34px, 6vw, 58px);
+      font-weight: 700;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+
+    .hero h1 span { color: var(--orange); }
+
+    .hero p {
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 520px;
+      margin: 0 auto 0;
+      line-height: 1.65;
+    }
+
+    /* ── Demo window ── */
+    .demo-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 24px 96px;
+    }
+
+    .browser-window {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    }
+
+    .browser-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--surface-hi);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .browser-dots { display: flex; gap: 6px; }
+    .dot-r { width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; }
+    .dot-y { width: 12px; height: 12px; border-radius: 50%; background: #febc2e; }
+    .dot-g { width: 12px; height: 12px; border-radius: 50%; background: #28c840; }
+
+    .browser-url {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--muted);
+    }
+
+    .browser-content {
+      padding: 32px;
+      min-height: 260px;
+      position: relative;
+      background: #0d1410;
+    }
+
+    .chat-empty {
+      text-align: center;
+      padding: 40px 0 20px;
+    }
+
+    .chat-empty .asterisk { font-size: 32px; color: #cc785c; margin-bottom: 12px; }
+    .chat-empty p { font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .chat-empty small { font-size: 13px; color: var(--muted); }
+
+    .waypoint-banner {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #182216;
+      border: 1px solid #2d4a2d;
+      border-left: 3px solid var(--orange);
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      font-size: 13px;
+      color: var(--text);
+      width: 440px;
+      max-width: calc(100% - 48px);
+      animation: slideDown 0.3s ease 0.6s both;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    .banner-text { flex: 1; line-height: 1.4; min-width: 0; }
+    .banner-title { font-weight: 700; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .banner-sub { font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .banner-btn {
+      background: var(--orange);
+      color: #111a0f;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--font);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .banner-x {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-family: var(--font);
+      flex-shrink: 0;
+    }
+
+    /* ── Sections ── */
+    .section {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Before/After ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 22px;
+    }
+
+    .card-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .card-label.bad  { color: #d96b6b; }
+    .card-label.good { color: var(--green); }
+
+    .card ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+    .card ul li {
+      font-size: 13.5px;
+      color: var(--muted);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.5;
+    }
+
+    .card ul li .icon { flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Steps ── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 680px) { .steps { grid-template-columns: 1fr; } }
+
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 22px;
+    }
+
+    .step-num { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--orange); margin-bottom: 10px; }
+    .step h3  { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .step p   { font-size: 13px; color: var(--muted); line-height: 1.55; }
+
+    /* ── Features ── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    @media (max-width: 600px) { .features { grid-template-columns: 1fr; } }
+
+    .feature {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .feature-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: var(--orange-soft);
+      border: 1px solid rgba(232,117,58,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 15px;
+    }
+
+    .feature h4 { font-size: 13.5px; font-weight: 700; margin-bottom: 4px; }
+    .feature p  { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+
+    /* ── Tech ── */
+    .stack { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .tag {
+      font-size: 12px;
+      font-weight: 500;
+      font-family: var(--mono);
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 5px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--dim);
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <div class="nav-logo">
+      <svg width="16" height="20" viewBox="0 0 20 24" fill="none">
+        <path d="M10 0C4.477 0 0 4.477 0 10c0 6.627 8.5 14 10 14S20 16.627 20 10C20 4.477 15.523 0 10 0z" fill="#E8753A"/>
+        <circle cx="10" cy="10" r="3.5" fill="#111a0f"/>
+        <circle cx="10" cy="10" r="1.5" fill="#E8753A"/>
+      </svg>
+      Waypoint
+    </div>
+    <a href="https://github.com/kolawepo" target="_blank" class="btn-github">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub
+    </a>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <svg width="10" height="12" viewBox="0 0 20 24" fill="none"><path d="M10 0C4.477 0 0 4.477 0 10c0 6.627 8.5 14 10 14S20 16.627 20 10C20 4.477 15.523 0 10 0z" fill="#E8753A"/><circle cx="10" cy="10" r="3" fill="#111a0f"/></svg>
+      Chrome Extension
+    </div>
+    <h1>AI remembers the chat.<br/><span>Waypoint remembers the work.</span></h1>
+    <p>Every new Claude or ChatGPT conversation starts from zero. Waypoint watches your AI tabs and automatically picks up where you left off.</p>
+  </section>
+
+  <!-- Demo -->
+  <div class="demo-wrap" id="how-it-works">
+    <div class="browser-window">
+      <div class="browser-bar">
+        <div class="browser-dots">
+          <div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div>
+        </div>
+        <div class="browser-url">claude.ai/new</div>
+      </div>
+      <div class="browser-content">
+        <div class="chat-empty">
+          <div class="asterisk">✳</div>
+          <p>Moonlit chat?</p>
+          <small>How can I help you today?</small>
+        </div>
+        <div class="waypoint-banner">
+          <svg width="16" height="20" viewBox="0 0 20 24" fill="none" style="flex-shrink:0">
+            <path d="M10 0C4.477 0 0 4.477 0 10c0 6.627 8.5 14 10 14S20 16.627 20 10C20 4.477 15.523 0 10 0z" fill="#E8753A"/>
+            <circle cx="10" cy="10" r="3.5" fill="#182216"/>
+            <circle cx="10" cy="10" r="1.5" fill="#E8753A"/>
+          </svg>
+          <div class="banner-text">
+            <div class="banner-title">Continue working on Vault?</div>
+            <div class="banner-sub">Waypoint detected your last session — RAG search, Cloudflare Vectorize</div>
+          </div>
+          <button class="banner-btn">Continue</button>
+          <button class="banner-x">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Problem / Solution -->
+  <section class="section">
+    <div class="section-label">The problem</div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-label bad">Without Waypoint</div>
+        <ul>
+          <li><span class="icon">✗</span> Open a new chat — AI starts from zero</li>
+          <li><span class="icon">✗</span> Re-explain your stack, what's built, what's broken</li>
+          <li><span class="icon">✗</span> Switch from Claude to ChatGPT — start over again</li>
+          <li><span class="icon">✗</span> Hit context limit — lose all project state</li>
+          <li><span class="icon">✗</span> Come back after a break — AI has no idea what changed</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-label good">With Waypoint</div>
+        <ul>
+          <li><span class="icon" style="color:var(--green)">✓</span> Open a new chat — banner appears automatically</li>
+          <li><span class="icon" style="color:var(--green)">✓</span> Click Continue — full context injected instantly</li>
+          <li><span class="icon" style="color:var(--green)">✓</span> Switch platforms — Waypoint bridges the gap</li>
+          <li><span class="icon" style="color:var(--green)">✓</span> Context resets — one click to restore</li>
+          <li><span class="icon" style="color:var(--green)">✓</span> Come back later — picks up where you left off</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="section">
+    <div class="section-label">How it works</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">STEP 01</div>
+        <h3>Work normally</h3>
+        <p>Use Claude or ChatGPT like you always do. Waypoint runs silently in the background, reading your AI tabs every 30 seconds.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">STEP 02</div>
+        <h3>Open a new chat</h3>
+        <p>Waypoint detects what you were just working on from the actual conversation content and shows a prompt at the top of the page.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">STEP 03</div>
+        <h3>Click Continue</h3>
+        <p>Your full project context is injected into the chat input. The AI immediately understands where you left off.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="section">
+    <div class="section-label">Features</div>
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">🔍</div>
+        <div>
+          <h4>Auto session detection</h4>
+          <p>Reads conversation content from open tabs to detect your project — no manual input needed.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🔀</div>
+        <div>
+          <h4>Cross-platform</h4>
+          <p>Works across Claude and ChatGPT in either direction. Neither AI can bridge this gap on its own.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📁</div>
+        <div>
+          <h4>Multi-project support</h4>
+          <p>Save structured state for up to 5 projects — Completed, In Progress, Blocked, Next Steps.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🔒</div>
+        <div>
+          <h4>100% local</h4>
+          <p>Everything stays in your browser. No backend, no accounts, no tracking.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech -->
+  <section class="section">
+    <div class="section-label">Built with</div>
+    <div class="stack">
+      <span class="tag">Manifest V3</span>
+      <span class="tag">JavaScript</span>
+      <span class="tag">Chrome tabs API</span>
+      <span class="tag">chrome.storage.local</span>
+      <span class="tag">Content Scripts</span>
+      <span class="tag">Service Worker</span>
+      <span class="tag">MutationObserver</span>
+      <span class="tag">No frameworks</span>
+      <span class="tag">No backend</span>
+    </div>
+  </section>
+
+  <footer>
+    <p>Built by <a href="https://github.com/kolawepo" target="_blank">Kehinde</a></p>
+  </footer>
+
+</body>
+</html>
