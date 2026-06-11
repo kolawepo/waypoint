@@ -2,22 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Waypoint</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
+
+  <!-- ─── Header ───────────────────────────────────────────────── -->
   <header class="header">
     <div class="header-top">
       <div class="logo">
-        <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
+        <!-- Trail marker / waypoint pin — sunrise orange on forest -->
+        <svg width="20" height="24" viewBox="0 0 20 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M10 0C4.477 0 0 4.477 0 10c0 6.627 8.5 14 10 14S20 16.627 20 10C20 4.477 15.523 0 10 0z" fill="#E8753A"/>
-          <circle cx="10" cy="10" r="3.5" fill="#171c28"/>
+          <circle cx="10" cy="10" r="3.5" fill="#1a2318"/>
           <circle cx="10" cy="10" r="1.5" fill="#E8753A"/>
         </svg>
         <span class="logo-text">Waypoint</span>
       </div>
       <span class="version-tag">v2</span>
     </div>
+
+    <!-- Project selector -->
     <div class="project-bar">
       <select id="projectSelect" class="project-select">
         <option value="">— select a project —</option>
@@ -30,9 +36,11 @@
       </button>
     </div>
   </header>
+
+  <!-- ─── Empty state ───────────────────────────────────────────── -->
   <div id="emptyState" class="empty-state">
     <div class="empty-icon">
-      <svg width="40" height="48" viewBox="0 0 40 48" fill="none">
+      <svg width="40" height="48" viewBox="0 0 40 48" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M20 0C8.954 0 0 8.954 0 20c0 13.255 17 28 20 28S40 33.255 40 20C40 8.954 31.046 0 20 0z" fill="#E8753A" opacity="0.15"/>
         <path d="M20 0C8.954 0 0 8.954 0 20c0 13.255 17 28 20 28S40 33.255 40 20C40 8.954 31.046 0 20 0z" stroke="#E8753A" stroke-width="1.5" fill="none"/>
         <circle cx="20" cy="20" r="6" stroke="#E8753A" stroke-width="1.5" fill="none"/>
@@ -42,47 +50,71 @@
     <p class="empty-title">No waypoints yet</p>
     <p class="empty-sub">Tap <strong>+</strong> to drop your first pin.</p>
   </div>
+
+  <!-- ─── Project form ──────────────────────────────────────────── -->
   <main id="projectForm" class="main hidden">
+
     <div class="coord-bar">
       <span class="coord-label">Current waypoint</span>
       <span id="activeProjectName" class="coord-name">—</span>
     </div>
+
     <div class="field-group">
-      <label class="field-label"><span class="status-pip pip--green"></span>Completed</label>
+      <label for="completed" class="field-label">
+        <span class="status-pip pip--green"></span>Completed
+      </label>
       <textarea id="completed" class="textarea" rows="3" placeholder="What's done? One item per line."></textarea>
     </div>
+
     <div class="field-group">
-      <label class="field-label"><span class="status-pip pip--amber"></span>In Progress</label>
+      <label for="inProgress" class="field-label">
+        <span class="status-pip pip--amber"></span>In Progress
+      </label>
       <textarea id="inProgress" class="textarea" rows="3" placeholder="What are you currently working on?"></textarea>
     </div>
+
     <div class="field-group">
-      <label class="field-label"><span class="status-pip pip--red"></span>Blocked</label>
+      <label for="blocked" class="field-label">
+        <span class="status-pip pip--red"></span>Blocked
+      </label>
       <textarea id="blocked" class="textarea" rows="2" placeholder="Any blockers or open questions?"></textarea>
     </div>
+
     <div class="field-group">
-      <label class="field-label"><span class="status-pip pip--blue"></span>Next Steps</label>
+      <label for="nextSteps" class="field-label">
+        <span class="status-pip pip--blue"></span>Next Steps
+      </label>
       <textarea id="nextSteps" class="textarea" rows="3" placeholder="What needs to happen next?"></textarea>
     </div>
+
     <div class="field-group">
-      <label class="field-label">Notes</label>
+      <label for="notes" class="field-label">Notes</label>
       <textarea id="notes" class="textarea" rows="2" placeholder="Anything else the AI should know?"></textarea>
     </div>
+
     <button id="saveBtn" class="btn btn--primary">Save</button>
-    <p id="saveStatus" class="save-status"></p>
+    <p id="saveStatus" class="save-status" aria-live="polite"></p>
+
     <div class="rule"><span class="rule-label">Context</span></div>
+
     <div class="btn-row">
       <button id="generateBtn" class="btn btn--secondary">Generate Context</button>
       <button id="copyBtn" class="btn btn--ghost" disabled>Copy</button>
     </div>
+
     <div id="contextBox" class="context-box hidden">
       <pre id="contextOutput"></pre>
     </div>
+
   </main>
+
+  <!-- ─── Pro footer ────────────────────────────────────────────── -->
   <footer id="proFooter" class="pro-footer hidden">
     <span class="pro-lock">🔒</span>
     <span class="pro-text">You've reached the 5-project limit.</span>
     <button id="unlockBtn" class="btn-pro">Unlock Pro</button>
   </footer>
+
   <script src="popup.js"></script>
 </body>
 </html>

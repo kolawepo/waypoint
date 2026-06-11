@@ -1,29 +1,45 @@
 {
   "manifest_version": 3,
   "name": "Waypoint",
-  "version": "2.0",
+  "version": "3.0",
   "description": "Project memory layer for AI-assisted work. Save your project state and inject it into ChatGPT or Claude instantly.",
+
   "action": {
     "default_popup": "popup.html",
     "default_title": "Waypoint"
   },
+
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": ["storage", "clipboardWrite", "tabs"],
+
+  "permissions": [
+    "storage",
+    "clipboardWrite",
+    "tabs"
+  ],
+
   "host_permissions": [
     "https://chatgpt.com/*",
     "https://chat.openai.com/*",
     "https://claude.ai/*"
   ],
+
   "content_scripts": [
     {
-      "matches": ["https://claude.ai/*","https://chatgpt.com/*","https://chat.openai.com/*"],
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://claude.ai/*"
+      ],
       "js": ["content.js"],
       "run_at": "document_idle"
     }
   ],
-  "background": { "service_worker": "background.js" }
+
+  "background": {
+    "service_worker": "background.js"
+  }
 }

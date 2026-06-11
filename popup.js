@@ -1,144 +1,310 @@
-// popup.js — refactored for multi-project support
-// storage shape: { waypointProjects: [...], waypointActiveId: "..." }
+/**
+ * popup.js — Waypoint v2
+ *
+ * Handles:
+ *   1. Multi-project management (create, switch, delete)
+ *   2. Saving and loading per-project state
+ *   3. Generating and copying the context block
+ *   4. 5-project free tier with Pro upsell
+ *
+ * Storage shape:
+ *   {
+ *     waypointProjects: [
+ *       { id: "abc123", name: "Vault", completed: "", inProgress: "", blocked: "", nextSteps: "", notes: "" },
+ *       ...
+ *     ],
+ *     waypointActiveId: "abc123"
+ *   }
+ */
 
-document.addEventListener('DOMContentLoaded', loadProjects);
+// ─── Constants ─────────────────────────────────────────────────────────────
+const FREE_PROJECT_LIMIT = 5;
 
-let projects = [];
-let activeId = null;
+// ─── DOM references ─────────────────────────────────────────────────────────
+const projectSelect     = document.getElementById('projectSelect');
+const newProjectBtn     = document.getElementById('newProjectBtn');
+const deleteProjectBtn  = document.getElementById('deleteProjectBtn');
 
-function loadProjects() {
-  chrome.storage.local.get(['waypointProjects', 'waypointActiveId'], (data) => {
-    projects  = data.waypointProjects || [];
-    activeId  = data.waypointActiveId || null;
-    renderDropdown();
-    renderForm();
-  });
-}
+const emptyState        = document.getElementById('emptyState');
+const projectForm       = document.getElementById('projectForm');
+const activeProjectName = document.getElementById('activeProjectName');
 
-function renderDropdown() {
-  const sel = document.getElementById('projectSelect');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">— select project —</option>';
-  projects.forEach(p => {
-    const opt = document.createElement('option');
-    opt.value = p.id;
-    opt.textContent = p.name;
-    if (p.id === activeId) opt.selected = true;
-    sel.appendChild(opt);
-  });
-}
+const completedInput    = document.getElementById('completed');
+const inProgressInput   = document.getElementById('inProgress');
+const blockedInput      = document.getElementById('blocked');
+const nextStepsInput    = document.getElementById('nextSteps');
+const notesInput        = document.getElementById('notes');
 
-function renderForm() {
-  const project = projects.find(p => p.id === activeId);
-  const form = document.getElementById('projectForm');
-  const empty = document.getElementById('emptyState');
-  if (!project) {
-    if (form)  form.classList.add('hidden');
-    if (empty) empty.classList.remove('hidden');
+const saveBtn           = document.getElementById('saveBtn');
+const saveStatus        = document.getElementById('saveStatus');
+const generateBtn       = document.getElementById('generateBtn');
+const copyBtn           = document.getElementById('copyBtn');
+const contextBox        = document.getElementById('contextBox');
+const contextOutput     = document.getElementById('contextOutput');
+
+const proFooter         = document.getElementById('proFooter');
+const unlockBtn         = document.getElementById('unlockBtn');
+
+// ─── App state (in memory while popup is open) ──────────────────────────────
+let projects  = [];   // Array of project objects
+let activeId  = null; // ID of the currently selected project
+
+// ─── 1. Initialize: load everything from storage when popup opens ────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  const data = await storageGet(['waypointProjects', 'waypointActiveId']);
+
+  projects = data.waypointProjects || [];
+  activeId = data.waypointActiveId || null;
+
+  renderProjectDropdown();
+  renderActiveProject();
+});
+
+// ─── 2. Create a new project ─────────────────────────────────────────────────
+newProjectBtn.addEventListener('click', () => {
+  // Enforce free tier limit
+  if (projects.length >= FREE_PROJECT_LIMIT) {
+    proFooter.classList.remove('hidden');
     return;
   }
-  if (form)  form.classList.remove('hidden');
-  if (empty) empty.classList.add('hidden');
-  document.getElementById('completed').value  = project.completed  || '';
-  document.getElementById('inProgress').value = project.inProgress || '';
-  document.getElementById('blocked').value    = project.blocked    || '';
-  document.getElementById('nextSteps').value  = project.nextSteps  || '';
-  document.getElementById('notes').value      = project.notes      || '';
+
+  const name = prompt('Project name:');
+  if (!name || !name.trim()) return;
+
+  // Create a new project object with a unique ID
+  const newProject = {
+    id:         generateId(),
+    name:       name.trim(),
+    completed:  '',
+    inProgress: '',
+    blocked:    '',
+    nextSteps:  '',
+    notes:      '',
+  };
+
+  projects.push(newProject);
+  activeId = newProject.id;
+
+  saveAllProjects();
+  renderProjectDropdown();
+  renderActiveProject();
+});
+
+// ─── 3. Switch projects via the dropdown ─────────────────────────────────────
+projectSelect.addEventListener('change', () => {
+  const selected = projectSelect.value;
+  if (!selected) {
+    activeId = null;
+    renderActiveProject();
+    return;
+  }
+
+  activeId = selected;
+  storageSet({ waypointActiveId: activeId });
+  renderActiveProject();
+});
+
+// ─── 4. Delete the active project ────────────────────────────────────────────
+deleteProjectBtn.addEventListener('click', () => {
+  const project = getActiveProject();
+  if (!project) return;
+
+  const confirmed = confirm(`Delete "${project.name}"? This cannot be undone.`);
+  if (!confirmed) return;
+
+  // Remove from array
+  projects = projects.filter(p => p.id !== activeId);
+
+  // Switch to next available project, or none
+  activeId = projects.length > 0 ? projects[0].id : null;
+
+  saveAllProjects();
+  renderProjectDropdown();
+  renderActiveProject();
+
+  // Hide pro footer if we're back under the limit
+  if (projects.length < FREE_PROJECT_LIMIT) {
+    proFooter.classList.add('hidden');
+  }
+});
+
+// ─── 5. Save the current project's fields ────────────────────────────────────
+saveBtn.addEventListener('click', () => {
+  const project = getActiveProject();
+  if (!project) return;
+
+  // Update the project object with current field values
+  project.completed  = completedInput.value.trim();
+  project.inProgress = inProgressInput.value.trim();
+  project.blocked    = blockedInput.value.trim();
+  project.nextSteps  = nextStepsInput.value.trim();
+  project.notes      = notesInput.value.trim();
+
+  saveAllProjects();
+
+  // Brief confirmation
+  saveStatus.textContent = '✓ Saved';
+  setTimeout(() => { saveStatus.textContent = ''; }, 2000);
+});
+
+// ─── 6. Generate the context block ───────────────────────────────────────────
+generateBtn.addEventListener('click', () => {
+  const project = getActiveProject();
+  if (!project) return;
+
+  const context = buildContextBlock(project);
+  contextOutput.textContent = context;
+  contextBox.classList.remove('hidden');
+  copyBtn.disabled = false;
+});
+
+// ─── 7. Copy context to clipboard ────────────────────────────────────────────
+copyBtn.addEventListener('click', () => {
+  const text = contextOutput.textContent;
+  if (!text) return;
+
+  navigator.clipboard.writeText(text).then(() => {
+    const original = copyBtn.textContent;
+    copyBtn.textContent = 'Copied!';
+    setTimeout(() => { copyBtn.textContent = original; }, 1800);
+  });
+});
+
+// ─── Pro upsell button (placeholder for now) ─────────────────────────────────
+unlockBtn.addEventListener('click', () => {
+  // TODO v3: open Stripe checkout or account creation flow
+  alert('Pro coming soon! Unlimited projects + cloud sync across devices.');
+});
+
+// ─── Render helpers ───────────────────────────────────────────────────────────
+
+/**
+ * Rebuilds the project dropdown from the current `projects` array.
+ */
+function renderProjectDropdown() {
+  // Clear existing options (except the placeholder)
+  projectSelect.innerHTML = '<option value="">— select a project —</option>';
+
+  projects.forEach(p => {
+    const option = document.createElement('option');
+    option.value = p.id;
+    option.textContent = p.name;
+    if (p.id === activeId) option.selected = true;
+    projectSelect.appendChild(option);
+  });
 }
 
-function saveAll() {
-  chrome.storage.local.set({ waypointProjects: projects, waypointActiveId: activeId });
+/**
+ * Shows or hides the form based on whether there's an active project.
+ * Populates fields if a project is active.
+ */
+function renderActiveProject() {
+  const project = getActiveProject();
+
+  if (!project) {
+    // No project selected — show empty state
+    emptyState.classList.remove('hidden');
+    projectForm.classList.add('hidden');
+    deleteProjectBtn.disabled = true;
+
+    // Hide context box if it was open
+    contextBox.classList.add('hidden');
+    copyBtn.disabled = true;
+    return;
+  }
+
+  // Project selected — show form, populate fields
+  emptyState.classList.add('hidden');
+  projectForm.classList.remove('hidden');
+  deleteProjectBtn.disabled = false;
+
+  activeProjectName.textContent = project.name;
+  completedInput.value  = project.completed  || '';
+  inProgressInput.value = project.inProgress || '';
+  blockedInput.value    = project.blocked    || '';
+  nextStepsInput.value  = project.nextSteps  || '';
+  notesInput.value      = project.notes      || '';
+
+  // Reset context box when switching projects
+  contextBox.classList.add('hidden');
+  copyBtn.disabled = true;
+  saveStatus.textContent = '';
 }
 
+// ─── Storage helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Saves the full projects array and active ID to chrome.storage.local.
+ */
+function saveAllProjects() {
+  storageSet({
+    waypointProjects: projects,
+    waypointActiveId: activeId,
+  });
+}
+
+/**
+ * Wraps chrome.storage.local.get in a Promise so we can use async/await.
+ */
+function storageGet(keys) {
+  return new Promise(resolve => {
+    chrome.storage.local.get(keys, resolve);
+  });
+}
+
+/**
+ * Wraps chrome.storage.local.set in a Promise.
+ */
+function storageSet(data) {
+  return new Promise(resolve => {
+    chrome.storage.local.set(data, resolve);
+  });
+}
+
+// ─── Utility helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Returns the active project object, or null if none is selected.
+ */
+function getActiveProject() {
+  if (!activeId) return null;
+  return projects.find(p => p.id === activeId) || null;
+}
+
+/**
+ * Generates a short random ID for a new project.
+ */
 function generateId() {
   return Math.random().toString(36).slice(2, 9);
 }
 
-function buildContext(project) {
-  function bullets(raw) {
+/**
+ * Builds the formatted context string from a project object.
+ * Skips empty sections so the output stays clean.
+ */
+function buildContextBlock(project) {
+  function bulletList(raw) {
     if (!raw) return '';
-    return raw.split('\n').map(l => l.trim()).filter(Boolean).map(l => '• ' + l).join('\n');
+    return raw
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .map(line => `• ${line}`)
+      .join('\n');
   }
-  const lines = ['Project: ' + project.name];
-  if (project.completed)  { lines.push('', 'Completed:',   bullets(project.completed)); }
-  if (project.inProgress) { lines.push('', 'In Progress:', bullets(project.inProgress)); }
-  if (project.blocked)    { lines.push('', 'Blocked:',     bullets(project.blocked)); }
-  if (project.nextSteps)  { lines.push('', 'Next Steps:',  bullets(project.nextSteps)); }
-  if (project.notes)      { lines.push('', 'Notes:',       bullets(project.notes)); }
-  lines.push('', '---', 'Resume Instruction: Use this context to continue the project without asking me to re-explain completed work. First verify current state, then continue from the next step.');
+
+  const lines = [];
+  lines.push(`Project: ${project.name}`);
+
+  if (project.completed)  { lines.push(''); lines.push('Completed:');  lines.push(bulletList(project.completed)); }
+  if (project.inProgress) { lines.push(''); lines.push('In Progress:'); lines.push(bulletList(project.inProgress)); }
+  if (project.blocked)    { lines.push(''); lines.push('Blocked:');    lines.push(bulletList(project.blocked)); }
+  if (project.nextSteps)  { lines.push(''); lines.push('Next Steps:'); lines.push(bulletList(project.nextSteps)); }
+  if (project.notes)      { lines.push(''); lines.push('Notes:');      lines.push(bulletList(project.notes)); }
+
+  lines.push('');
+  lines.push('---');
+  lines.push('Resume Instruction: Use this context to continue the project without asking me to re-explain completed work. First verify current state, then continue from the next step.');
+
   return lines.join('\n');
 }
-
-// Wire up buttons
-document.addEventListener('DOMContentLoaded', () => {
-  const newBtn    = document.getElementById('newProjectBtn');
-  const delBtn    = document.getElementById('deleteProjectBtn');
-  const sel       = document.getElementById('projectSelect');
-  const saveBtn   = document.getElementById('saveBtn');
-  const genBtn    = document.getElementById('generateBtn');
-  const copyBtn   = document.getElementById('copyBtn');
-
-  if (newBtn) newBtn.addEventListener('click', () => {
-    if (projects.length >= 5) {
-      document.getElementById('proFooter')?.classList.remove('hidden');
-      return;
-    }
-    const name = prompt('Project name:');
-    if (!name?.trim()) return;
-    const p = { id: generateId(), name: name.trim(), completed: '', inProgress: '', blocked: '', nextSteps: '', notes: '' };
-    projects.push(p);
-    activeId = p.id;
-    saveAll();
-    renderDropdown();
-    renderForm();
-  });
-
-  if (delBtn) delBtn.addEventListener('click', () => {
-    const p = projects.find(p => p.id === activeId);
-    if (!p || !confirm('Delete "' + p.name + '"?')) return;
-    projects = projects.filter(p => p.id !== activeId);
-    activeId = projects[0]?.id || null;
-    saveAll();
-    renderDropdown();
-    renderForm();
-  });
-
-  if (sel) sel.addEventListener('change', () => {
-    activeId = sel.value || null;
-    chrome.storage.local.set({ waypointActiveId: activeId });
-    renderForm();
-  });
-
-  if (saveBtn) saveBtn.addEventListener('click', () => {
-    const p = projects.find(p => p.id === activeId);
-    if (!p) return;
-    p.completed  = document.getElementById('completed').value.trim();
-    p.inProgress = document.getElementById('inProgress').value.trim();
-    p.blocked    = document.getElementById('blocked').value.trim();
-    p.nextSteps  = document.getElementById('nextSteps').value.trim();
-    p.notes      = document.getElementById('notes').value.trim();
-    saveAll();
-    const status = document.getElementById('saveStatus');
-    if (status) { status.textContent = '✓ Saved'; setTimeout(() => { status.textContent = ''; }, 2000); }
-  });
-
-  if (genBtn) genBtn.addEventListener('click', () => {
-    const p = projects.find(proj => proj.id === activeId);
-    if (!p) return;
-    const context = buildContext(p);
-    document.getElementById('contextOutput').textContent = context;
-    document.getElementById('contextBox').classList.remove('hidden');
-    if (copyBtn) copyBtn.disabled = false;
-  });
-
-  if (copyBtn) copyBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(document.getElementById('contextOutput').textContent).then(() => {
-      const orig = copyBtn.textContent;
-      copyBtn.textContent = 'Copied!';
-      setTimeout(() => { copyBtn.textContent = orig; }, 1800);
-    });
-  });
-});
-
-// fix: save active project before switching to prevent data loss
-// finalized multi-project logic apr 2026
