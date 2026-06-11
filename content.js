@@ -250,8 +250,8 @@ async function checkForNewChat() {
   const threeHours = 3 * 60 * 60 * 1000;
   if (Date.now() - session.savedAt > threeHours) return;
 
-  if (session.url === window.location.href) return;
-
+// Allow showing the banner even on the same base new-chat URL.
+// if (session.url === window.location.href) return;
   if (projects.length > 0) {
     sessionStorage.setItem(
       "waypointProjectNames",
@@ -266,7 +266,6 @@ async function checkForNewChat() {
   const subtitle = session.aiSummary
     ? session.aiSummary.split("\n")[1]?.slice(0, 80) || "AI-generated session summary ready"
     : session.lastTopic || "Pick up where you left off";
-
   showContinuePrompt({ title, subtitle, session, projects });
 }
 
